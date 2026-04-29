@@ -1,3 +1,15 @@
+# Dataset
+data/
+
+# Model checkpoints
+models/
+
+# Experiments
+experiments/
+
+# Results
+results/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
