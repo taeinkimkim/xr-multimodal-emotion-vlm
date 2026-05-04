@@ -86,6 +86,25 @@ xr-multimodal-emotion-vlm/
     └── face_analysis.ipynb
 ```
 
+## Download AffectNet
+AffectNet face data can be downloaded from Hugging Face with:
+
+```bash
+pip install huggingface_hub
+python3 scripts/download_affectnet.py "owner/affectnet"
+```
+
+Replace `"owner/affectnet"` with the actual Hugging Face dataset repo ID.
+For example, if the dataset URL is `https://huggingface.co/datasets/owner/affectnet`,
+the repo ID is `owner/affectnet`.
+
+By default, files are saved to:
+
+```text
+data/raw/face/affectnet/
+```
+
+
 ## Experiments
 ### 1. Direct VLM
 ```
