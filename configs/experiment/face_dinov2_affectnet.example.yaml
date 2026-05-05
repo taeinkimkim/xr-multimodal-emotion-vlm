@@ -1,0 +1,13 @@
+dataset: data/raw/face/affectnet
+model_name: facebook/dinov2-base
+image_column: image
+label_column: label
+train_split: train
+eval_split: validation
+output_dir: models/face/dinov2_affectnet
+epochs: 5
+batch_size: 16
+lr: 0.0003
+weight_decay: 0.01
+warmup_ratio: 0.1
+use_lora: false

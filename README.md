@@ -104,6 +104,52 @@ By default, files are saved to:
 data/raw/face/affectnet/
 ```
 
+## Train DINOv2 on AffectNet
+Install the training dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then train a frozen-backbone DINOv2 emotion classifier:
+
+```bash
+python3 -m src.pipelines.train_face_dinov2 \
+  --dataset data/raw/face/affectnet \
+  --model-name facebook/dinov2-base \
+  --epochs 5 \
+  --batch-size 16
+```
+
+The model uses Hugging Face `AutoImageProcessor` and `AutoModel` to load
+`facebook/dinov2-base`, takes the CLS token as the image feature, and trains a
+small classification head for AffectNet labels.
+
+If the Hugging Face AffectNet repo uses different column names, pass them
+explicitly:
+
+```bash
+python3 -m src.pipelines.train_face_dinov2 \
+  --dataset data/raw/face/affectnet \
+  --image-column image \
+  --label-column label
+```
+
+To fine-tune DINOv2 with LoRA later:
+
+```bash
+python3 -m src.pipelines.train_face_dinov2 \
+  --dataset data/raw/face/affectnet \
+  --use-lora \
+  --lora-r 8 \
+  --lora-alpha 16 \
+  --batch-size 16 \
+  --lr 0.0001
+```
+
+Use `--unfreeze-backbone` only when you want full backbone fine-tuning. For a
+first baseline, keep the backbone frozen; for the next step, use LoRA.
+
 
 ## Experiments
 ### 1. Direct VLM
