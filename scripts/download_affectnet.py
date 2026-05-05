@@ -56,6 +56,15 @@ def parse_args() -> argparse.Namespace:
         dest="ignore_patterns",
         help="Skip matching files. Can be repeated.",
     )
+    parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=1,
+        help=(
+            "Number of concurrent file downloads. Default: 1, which is safer "
+            "for low-memory machines."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -72,6 +81,7 @@ def main() -> None:
         token=args.token,
         allow_patterns=args.allow_patterns,
         ignore_patterns=args.ignore_patterns,
+        max_workers=args.max_workers,
     )
 
     print(f"Downloaded {args.repo_id} to {downloaded_path}")
