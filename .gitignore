@@ -1,14 +1,14 @@
 # Dataset
-data/
+/data/
 
 # Model checkpoints
-models/
+/models/
 
 # Experiments
-experiments/
+/experiments/
 
 # Results
-results/
+/results/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
