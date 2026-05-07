@@ -20,7 +20,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.data.face.affectnet_dataset import load_affectnet_dataset  # noqa: E402
+from src.data.face.emotion_dataset import load_face_emotion_dataset  # noqa: E402
+from src.data.face.label_schema import (  # noqa: E402
+    CANONICAL_EMOTION_LABELS,
+    canonicalize_label,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -37,8 +41,9 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    dataset, label2id, _ = load_affectnet_dataset(
+    dataset, label2id, _ = load_face_emotion_dataset(
         args.dataset,
+        dataset_type="affectnet",
         image_column=args.image_column,
         label_column=args.label_column,
         validation_ratio=args.validation_ratio,
@@ -46,7 +51,7 @@ def main() -> None:
     )
 
     print(f"Dataset: {Path(args.dataset).expanduser().resolve()}")
-    print(f"Labels: {', '.join(label2id)}")
+    print_common_labels(label2id)
     print(f"Splits: {', '.join(dataset.keys())}")
     print()
 
@@ -90,7 +95,7 @@ def analyze_split(
     heights: list[int] = []
 
     for row in tqdm(split_dataset, desc=description):
-        label = str(row[label_column])
+        label = canonicalize_label(str(row[label_column]))
         width, height = read_image_size(row, image_column=image_column)
 
         label_counts[label] += 1
@@ -102,7 +107,7 @@ def analyze_split(
         heights.append(height)
 
     label_summaries = {}
-    for label in sorted(label_counts):
+    for label in ordered_labels(label_counts):
         label_summaries[label] = {
             "count": label_counts[label],
             "image_size_summary": summarize_sizes(label_widths[label], label_heights[label]),
@@ -111,15 +116,26 @@ def analyze_split(
 
     return {
         "total": sum(label_counts.values()),
-        "label_counts": dict(sorted(label_counts.items())),
+        "label_counts": {label: label_counts[label] for label in ordered_labels(label_counts)},
         "labels": label_summaries,
         "image_size_summary": summarize_sizes(widths, heights),
         "top_image_sizes": format_size_counts(size_counts, top_k_sizes),
         "top_image_sizes_by_label": {
             label: format_size_counts(label_size_counts[label], top_k_sizes)
-            for label in sorted(label_size_counts)
+            for label in ordered_labels(label_size_counts)
         },
     }
+
+
+def ordered_labels(counts: Counter[str] | dict[str, object]) -> list[str]:
+    known = [label for label in CANONICAL_EMOTION_LABELS if label in counts]
+    remaining = sorted(label for label in counts if label not in CANONICAL_EMOTION_LABELS)
+    return known + remaining
+
+
+def print_common_labels(label2id: dict[str, int]) -> None:
+    labels = sorted(label2id.items(), key=lambda item: item[1])
+    print("Labels: " + ", ".join(f"{label_id}:{label}" for label, label_id in labels))
 
 
 def read_image_size(row: dict[str, Any], image_column: str) -> tuple[int, int]:

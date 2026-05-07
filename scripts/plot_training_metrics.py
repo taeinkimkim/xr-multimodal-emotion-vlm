@@ -12,7 +12,7 @@ from typing import Any
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("history_json", type=Path, help="Path to *_history.json")
+    parser.add_argument("history_json", type=Path, help="Path to history.json or *_history.json")
     parser.add_argument("--output", type=Path, default=None, help="Output PNG path")
     parser.add_argument(
         "--class-output",
@@ -26,12 +26,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     report = load_history_report(args.history_json)
-    output = args.output or args.history_json.with_name(
-        args.history_json.name.replace("_history.json", "_plots.png")
-    )
-    class_output = args.class_output or args.history_json.with_name(
-        args.history_json.name.replace("_history.json", "_class_metrics.png")
-    )
+    output = args.output or default_plot_path(args.history_json, suffix="plots")
+    class_output = args.class_output or default_plot_path(args.history_json, suffix="class_metrics")
     save_training_plots(
         history=report["epochs"],
         final_metrics=report.get("final", {}),
@@ -41,6 +37,14 @@ def main() -> None:
         history=report["epochs"],
         plot_path=class_output,
     )
+
+
+def default_plot_path(history_json: Path, suffix: str) -> Path:
+    if history_json.name == "history.json":
+        return history_json.with_name(f"{suffix}.png")
+    if history_json.name.endswith("_history.json"):
+        return history_json.with_name(history_json.name.replace("_history.json", f"_{suffix}.png"))
+    return history_json.with_name(f"{history_json.stem}_{suffix}.png")
 
 
 def load_history_report(path: Path) -> dict[str, Any]:

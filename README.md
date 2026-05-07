@@ -104,53 +104,101 @@ By default, files are saved to:
 data/raw/face/affectnet/
 ```
 
+## Download RAF-DB
+RAF-DB face data can be downloaded from Kaggle with:
+
+```bash
+pip install kagglehub
+python3 scripts/download_rafdb.py "owner/raf-db-dataset"
+```
+
+Replace `"owner/raf-db-dataset"` with the actual Kaggle dataset ID.
+For example, if the dataset URL is
+`https://www.kaggle.com/datasets/owner/raf-db-dataset`, the dataset ID is
+`owner/raf-db-dataset`.
+
+By default, files are saved to:
+
+```text
+data/raw/face/rafdb/
+```
+
+To overwrite an existing local download:
+
+```bash
+python3 scripts/download_rafdb.py "owner/raf-db-dataset" --force-download
+```
+
 ## Analyze AffectNet
 Check label counts and image-size distributions before training:
 
 ```bash
 python3 scripts/analyze_affectnet.py \
-  --dataset data/raw/face/affectnet
-```
-
-To save the analysis as JSON:
-
-```bash
-python3 scripts/analyze_affectnet.py \
   --dataset data/raw/face/affectnet \
+  --validation-ratio 0.1 \
   --json-output results/face/affectnet_summary.json
 ```
 
-## Train DINOv2 on AffectNet
+## Analyze RAF-DB
+Check label counts and image-size distributions before training:
+
+```bash
+python3 scripts/analyze_rafdb.py \
+  --dataset data/raw/face/rafdb \
+  --validation-ratio 0.1 \
+  --json-output results/face/rafdb_summary.json
+```
+
+## Train DINOv2 on Face Emotion Data
 Install the training dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Then train a frozen-backbone DINOv2 emotion classifier:
+Then train a frozen-backbone DINOv2 emotion classifier on AffectNet:
 
 ```bash
 python3 -m src.pipelines.train_face_dinov2 \
   --dataset data/raw/face/affectnet \
+  --dataset-type affectnet \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --epochs 5 \
   --batch-size 16 \
+  --output-dir models/trained/face/dinov2_affectnet \
+  --model-filename model_ep5_bs16.pt
+```
+
+To train on RAF-DB:
+
+```bash
+python3 -m src.pipelines.train_face_dinov2 \
+  --dataset data/raw/face/rafdb \
+  --dataset-type rafdb \
+  --validation-ratio 0.1 \
+  --model-name facebook/dinov2-base \
+  --epochs 5 \
+  --batch-size 16 \
+  --output-dir models/trained/face/dinov2_rafdb \
   --model-filename model_ep5_bs16.pt
 ```
 
 The model uses Hugging Face `AutoImageProcessor` and `AutoModel` to load
 `facebook/dinov2-base`, takes the CLS token as the image feature, and trains a
-small classification head for AffectNet labels.
+small classification head for the detected dataset labels.
 
-If the Hugging Face AffectNet repo uses different column names, pass them
-explicitly:
+All supported face-emotion datasets are normalized to the same label ids before
+training:
 
-```bash
-python3 -m src.pipelines.train_face_dinov2 \
-  --dataset data/raw/face/affectnet \
-  --image-column image \
-  --label-column label
+```text
+0: Happiness
+1: Sadness
+2: Anger
+3: Surprise
+4: Fear
+5: Disgust
+6: Neutral
 ```
 
 To fine-tune DINOv2 with LoRA later:
@@ -158,6 +206,7 @@ To fine-tune DINOv2 with LoRA later:
 ```bash
 python3 -m src.pipelines.train_face_dinov2 \
   --dataset data/raw/face/affectnet \
+  --dataset-type affectnet \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --use-lora \
@@ -166,6 +215,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --epochs 5 \
   --batch-size 16 \
   --lr 0.0001 \
+  --output-dir models/trained/face/dinov2_affectnet \
   --model-filename model_lora_ep5_bs16.pt
 ```
 
@@ -177,23 +227,23 @@ After training, plot the saved history file:
 
 ```bash
 python3 scripts/plot_training_metrics.py \
-  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16_history.json
+  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/history.json
 ```
 
 This creates two PNG files next to the history JSON:
 
 ```text
-model_lora_ep5_bs16_plots.png
-model_lora_ep5_bs16_class_metrics.png
+plots.png
+class_metrics.png
 ```
 
 Use custom output paths if needed:
 
 ```bash
 python3 scripts/plot_training_metrics.py \
-  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16_history.json \
-  --output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16_plots.png \
-  --class-output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16_class_metrics.png
+  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/history.json \
+  --output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/plots.png \
+  --class-output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/class_metrics.png
 ```
 
 

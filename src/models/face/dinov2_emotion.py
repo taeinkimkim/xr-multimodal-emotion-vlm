@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import torch
 from torch import nn
 from transformers import AutoConfig, AutoModel
@@ -19,10 +21,16 @@ class Dinov2EmotionClassifier(nn.Module):
         lora_r: int = 8,
         lora_alpha: int = 16,
         lora_dropout: float = 0.05,
+        pretrained_dir: Path | None = None,
     ) -> None:
         super().__init__()
-        self.config = AutoConfig.from_pretrained(model_name)
-        self.backbone = AutoModel.from_pretrained(model_name)
+        model_source = _resolve_pretrained_source(model_name, pretrained_dir)
+        cache_dir = str(pretrained_dir) if pretrained_dir is not None else None
+        self.config = AutoConfig.from_pretrained(model_source, cache_dir=cache_dir)
+        self.backbone = AutoModel.from_pretrained(model_source, cache_dir=cache_dir)
+        if pretrained_dir is not None and model_source == model_name:
+            pretrained_dir.mkdir(parents=True, exist_ok=True)
+            self.backbone.save_pretrained(pretrained_dir, safe_serialization=False)
 
         hidden_size = getattr(self.backbone.config, "hidden_size", None)
         if hidden_size is None:
@@ -58,6 +66,18 @@ def count_trainable_parameters(model: nn.Module) -> tuple[int, int]:
     trainable = sum(parameter.numel() for parameter in model.parameters() if parameter.requires_grad)
     total = sum(parameter.numel() for parameter in model.parameters())
     return trainable, total
+
+
+def _resolve_pretrained_source(model_name: str, pretrained_dir: Path | None) -> str:
+    if pretrained_dir is None:
+        return model_name
+
+    has_config = (pretrained_dir / "config.json").exists()
+    has_weights = any(
+        (pretrained_dir / filename).exists()
+        for filename in ("pytorch_model.bin", "model.safetensors")
+    )
+    return str(pretrained_dir) if has_config and has_weights else model_name
 
 
 def _pool_dinov2_output(outputs: object) -> torch.Tensor:
