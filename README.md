@@ -164,6 +164,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --dataset-type affectnet \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
+  --pretrained-dir models/pretrained/face/dinov2 \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_affectnet \
@@ -178,6 +179,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --dataset-type rafdb \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
+  --pretrained-dir models/pretrained/face/dinov2 \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_rafdb \
@@ -209,6 +211,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --dataset-type affectnet \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
+  --pretrained-dir models/pretrained/face/dinov2 \
   --use-lora \
   --lora-r 8 \
   --lora-alpha 16 \
