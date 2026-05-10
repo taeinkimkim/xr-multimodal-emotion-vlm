@@ -20,6 +20,11 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Output PNG path for per-class metric trends",
     )
+    parser.add_argument(
+        "--title-name",
+        default="DINOv2 AffectNet",
+        help="Name to use in the main figure title: '<name> Training Summary'.",
+    )
     return parser.parse_args()
 
 
@@ -32,6 +37,7 @@ def main() -> None:
         history=report["epochs"],
         final_metrics=report.get("final", {}),
         plot_path=output,
+        title_name=args.title_name,
     )
     save_class_metric_plots(
         history=report["epochs"],
@@ -65,6 +71,7 @@ def save_training_plots(
     history: list[dict[str, Any]],
     final_metrics: dict[str, Any],
     plot_path: Path,
+    title_name: str,
 ) -> None:
     if not history:
         raise ValueError("No epoch history found to plot")
@@ -87,7 +94,7 @@ def save_training_plots(
 
     epochs = [int(item["epoch"]) for item in history]
     fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-    fig.suptitle("DINOv2 AffectNet Training Summary", fontsize=16)
+    fig.suptitle(f"{title_name} Training Summary", fontsize=16)
 
     plot_metric_lines(
         axes[0, 0],

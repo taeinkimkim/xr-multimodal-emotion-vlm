@@ -230,7 +230,8 @@ After training, plot the saved history file:
 
 ```bash
 python3 scripts/plot_training_metrics.py \
-  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/history.json
+  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/history.json \
+  --title-name "DINOv2 AffectNet"
 ```
 
 This creates two PNG files next to the history JSON:
@@ -239,16 +240,6 @@ This creates two PNG files next to the history JSON:
 plots.png
 class_metrics.png
 ```
-
-Use custom output paths if needed:
-
-```bash
-python3 scripts/plot_training_metrics.py \
-  models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/history.json \
-  --output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/plots.png \
-  --class-output models/trained/face/dinov2_affectnet/model_lora_ep5_bs16/class_metrics.png
-```
-
 
 ## Experiments
 ### 1. Direct VLM

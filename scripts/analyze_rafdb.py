@@ -20,6 +20,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.data.face.label_schema import (
     CANONICAL_EMOTION_LABELS,
+    canonicalize_label,
     split_train_validation_rows,
 )
 from src.data.face.rafdb_dataset import RAFDB_LABEL_MAP
@@ -33,11 +34,23 @@ IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", default="data/raw/face/rafdb")
+    parser.add_argument(
+        "--format",
+        choices=("auto", "csv", "folders"),
+        default="auto",
+        help="Dataset layout. Use folders for split/class/image datasets like balanced_rafdb.",
+    )
     parser.add_argument("--image-root", default="DATASET")
     parser.add_argument("--image-column", default="image")
     parser.add_argument("--label-column", default="label")
     parser.add_argument("--train-labels", default="train_labels.csv")
     parser.add_argument("--test-labels", default="test_labels.csv")
+    parser.add_argument(
+        "--folder-splits",
+        nargs="+",
+        default=("train", "val", "test"),
+        help="Split directories to scan when --format folders is used.",
+    )
     parser.add_argument("--validation-ratio", type=float, default=0.1)
     parser.add_argument("--split-seed", type=int, default=42)
     parser.add_argument("--top-k-sizes", type=int, default=10)
@@ -48,28 +61,21 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     dataset_path = Path(args.dataset).expanduser().resolve()
-    train_rows = read_labels(dataset_path / args.train_labels)
-    train_rows, validation_rows = split_train_validation_rows(
-        train_rows,
-        image_column=args.image_column,
-        label_column=args.label_column,
-        validation_ratio=args.validation_ratio,
-        split_seed=args.split_seed,
-    )
-    test_rows = read_labels(dataset_path / args.test_labels)
-    splits = {
-        "train": (train_rows, "train"),
-        "validation": (validation_rows, "train"),
-        "test": (test_rows, "test"),
-    }
+    dataset_format = detect_dataset_format(args, dataset_path)
+    if dataset_format == "csv":
+        splits = load_csv_splits(args, dataset_path)
+    else:
+        splits = load_folder_splits(args, dataset_path)
 
     print(f"Dataset: {dataset_path}")
+    print(f"Format: {dataset_format}")
     print_common_labels()
     print(f"Splits: {', '.join(splits)}")
     print()
 
     report: dict[str, Any] = {
         "dataset": str(dataset_path),
+        "format": dataset_format,
         "labels": COMMON_LABEL2ID,
         "source_labels": RAFDB_LABEL_MAP,
         "splits": {},
@@ -98,12 +104,83 @@ def main() -> None:
         print(f"Wrote JSON report to {args.json_output}")
 
 
+def detect_dataset_format(args: argparse.Namespace, dataset_path: Path) -> str:
+    if args.format != "auto":
+        return args.format
+    if (dataset_path / args.train_labels).exists() and (dataset_path / args.test_labels).exists():
+        return "csv"
+    return "folders"
+
+
+def load_csv_splits(
+    args: argparse.Namespace,
+    dataset_path: Path,
+) -> dict[str, tuple[list[dict[str, str]], str]]:
+    train_rows = read_labels(dataset_path / args.train_labels)
+    train_rows, validation_rows = split_train_validation_rows(
+        train_rows,
+        image_column=args.image_column,
+        label_column=args.label_column,
+        validation_ratio=args.validation_ratio,
+        split_seed=args.split_seed,
+    )
+    test_rows = read_labels(dataset_path / args.test_labels)
+    return {
+        "train": (train_rows, "train"),
+        "validation": (validation_rows, "train"),
+        "test": (test_rows, "test"),
+    }
+
+
+def load_folder_splits(
+    args: argparse.Namespace,
+    dataset_path: Path,
+) -> dict[str, tuple[list[dict[str, str]], str]]:
+    splits: dict[str, tuple[list[dict[str, str]], str]] = {}
+    for split in args.folder_splits:
+        split_root = dataset_path / split
+        if not split_root.exists():
+            continue
+        rows = read_folder_rows(
+            split_root=split_root,
+            image_column=args.image_column,
+            label_column=args.label_column,
+        )
+        splits[split] = (rows, split)
+    if not splits:
+        split_names = ", ".join(args.folder_splits)
+        raise FileNotFoundError(
+            f"Could not find any split directories under {dataset_path}: {split_names}"
+        )
+    return splits
+
+
 def read_labels(labels_path: Path) -> list[dict[str, str]]:
     if not labels_path.exists():
         raise FileNotFoundError(f"Could not find labels file: {labels_path}")
 
     with labels_path.open("r", encoding="utf-8", newline="") as file:
         return list(csv.DictReader(file))
+
+
+def read_folder_rows(
+    split_root: Path,
+    image_column: str,
+    label_column: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for label_dir in sorted(path for path in split_root.iterdir() if path.is_dir()):
+        if label_dir.name.startswith("."):
+            continue
+        for image_path in sorted(label_dir.rglob("*")):
+            if image_path.is_file() and image_path.suffix.lower() in IMAGE_SUFFIXES:
+                rows.append(
+                    {
+                        image_column: str(image_path),
+                        label_column: label_dir.name,
+                    }
+                )
+    return rows
 
 
 def index_images(split_root: Path) -> dict[str, Path]:
@@ -213,7 +290,7 @@ def resolve_image_path(
 
 
 def format_label(label_id: str) -> str:
-    return RAFDB_LABEL_MAP.get(label_id, "unknown")
+    return canonicalize_label(RAFDB_LABEL_MAP.get(label_id, label_id))
 
 
 def ordered_labels(counts: Counter[str] | dict[str, object]) -> list[str]:

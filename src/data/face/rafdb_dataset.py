@@ -35,6 +35,13 @@ def load_rafdb_dataset(
     path = Path(dataset_path).expanduser().resolve()
     active_label_map = label_map or RAFDB_LABEL_MAP
 
+    if not (path / "train_labels.csv").exists() or not (path / "test_labels.csv").exists():
+        return _load_folder_rafdb_dataset(
+            path,
+            image_column=image_column,
+            label_column=label_column,
+        )
+
     train_rows = _read_csv_rows(path / "train_labels.csv")
     test_rows = _read_csv_rows(path / "test_labels.csv")
     train_rows, validation_rows = split_train_validation_rows(
@@ -83,6 +90,73 @@ def load_rafdb_dataset(
         }
     )
     return filter_supported_labels(dataset, label_column=label_column)
+
+
+def _load_folder_rafdb_dataset(
+    dataset_path: Path,
+    image_column: str,
+    label_column: str,
+) -> DatasetDict:
+    split_dirs = {
+        "train": _first_existing_dir(dataset_path, "train", "Train", "training", "Training"),
+        "validation": _first_existing_dir(
+            dataset_path,
+            "validation",
+            "Validation",
+            "valid",
+            "Valid",
+            "val",
+            "Val",
+        ),
+        "test": _first_existing_dir(dataset_path, "test", "Test", "testing", "Testing"),
+    }
+
+    dataset = DatasetDict()
+    for split, split_dir in split_dirs.items():
+        if split_dir is None:
+            continue
+        rows = _scan_label_folder(
+            split_dir,
+            image_column=image_column,
+            label_column=label_column,
+        )
+        if rows:
+            dataset[split] = Dataset.from_list(rows)
+
+    if not dataset:
+        raise FileNotFoundError(
+            f"Could not find RAF-DB CSV labels or split/class image folders under {dataset_path}"
+        )
+    return filter_supported_labels(dataset, label_column=label_column)
+
+
+def _first_existing_dir(root: Path, *names: str) -> Path | None:
+    for name in names:
+        candidate = root / name
+        if candidate.is_dir():
+            return candidate
+    return None
+
+
+def _scan_label_folder(
+    split_dir: Path,
+    image_column: str,
+    label_column: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for label_dir in sorted(path for path in split_dir.iterdir() if path.is_dir()):
+        if label_dir.name.startswith("."):
+            continue
+        label = canonicalize_label(label_dir.name)
+        for image_path in sorted(label_dir.rglob("*")):
+            if image_path.is_file() and image_path.suffix.lower() in IMAGE_SUFFIXES:
+                rows.append(
+                    {
+                        image_column: str(image_path.resolve()),
+                        label_column: label,
+                    }
+                )
+    return rows
 
 
 def _read_csv_rows(path: Path) -> list[dict[str, str]]:

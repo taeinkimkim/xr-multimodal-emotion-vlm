@@ -27,11 +27,29 @@ from src.data.face.label_schema import (  # noqa: E402
 )
 
 
+IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", default="data/raw/face/affectnet")
+    parser.add_argument(
+        "--format",
+        choices=("auto", "loader", "folders"),
+        default="auto",
+        help=(
+            "Dataset layout. Use folders for split/class/image datasets like "
+            "balanced_affectnet. Default: auto"
+        ),
+    )
     parser.add_argument("--image-column", default="image")
     parser.add_argument("--label-column", default="label")
+    parser.add_argument(
+        "--folder-splits",
+        nargs="+",
+        default=("train", "val", "test"),
+        help="Split directories to scan when --format folders is used.",
+    )
     parser.add_argument("--validation-ratio", type=float, default=0.1)
     parser.add_argument("--split-seed", type=int, default=42)
     parser.add_argument("--top-k-sizes", type=int, default=10)
@@ -41,22 +59,30 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    dataset, label2id, _ = load_face_emotion_dataset(
-        args.dataset,
-        dataset_type="affectnet",
-        image_column=args.image_column,
-        label_column=args.label_column,
-        validation_ratio=args.validation_ratio,
-        split_seed=args.split_seed,
-    )
+    dataset_path = Path(args.dataset).expanduser().resolve()
+    dataset_format = detect_dataset_format(args, dataset_path)
+    if dataset_format == "folders":
+        dataset = load_folder_splits(args, dataset_path)
+        label2id = infer_label2id(dataset, args.label_column)
+    else:
+        dataset, label2id, _ = load_face_emotion_dataset(
+            args.dataset,
+            dataset_type="affectnet",
+            image_column=args.image_column,
+            label_column=args.label_column,
+            validation_ratio=args.validation_ratio,
+            split_seed=args.split_seed,
+        )
 
-    print(f"Dataset: {Path(args.dataset).expanduser().resolve()}")
+    print(f"Dataset: {dataset_path}")
+    print(f"Format: {dataset_format}")
     print_common_labels(label2id)
     print(f"Splits: {', '.join(dataset.keys())}")
     print()
 
     report: dict[str, Any] = {
-        "dataset": str(Path(args.dataset).expanduser().resolve()),
+        "dataset": str(dataset_path),
+        "format": dataset_format,
         "labels": label2id,
         "splits": {},
     }
@@ -77,6 +103,70 @@ def main() -> None:
         with args.json_output.open("w", encoding="utf-8") as file:
             json.dump(report, file, ensure_ascii=False, indent=2)
         print(f"Wrote JSON report to {args.json_output}")
+
+
+def detect_dataset_format(args: argparse.Namespace, dataset_path: Path) -> str:
+    if args.format != "auto":
+        return args.format
+    if all((dataset_path / split).is_dir() for split in ("train", "val", "test")):
+        return "folders"
+    return "loader"
+
+
+def load_folder_splits(
+    args: argparse.Namespace,
+    dataset_path: Path,
+) -> dict[str, list[dict[str, str]]]:
+    dataset: dict[str, list[dict[str, str]]] = {}
+    for split in args.folder_splits:
+        split_root = dataset_path / split
+        if not split_root.exists():
+            continue
+        rows = read_folder_rows(
+            split_root=split_root,
+            image_column=args.image_column,
+            label_column=args.label_column,
+        )
+        if rows:
+            dataset[split] = rows
+
+    if not dataset:
+        split_names = ", ".join(args.folder_splits)
+        raise FileNotFoundError(
+            f"Could not find any image split directories under {dataset_path}: {split_names}"
+        )
+    return dataset
+
+
+def read_folder_rows(
+    split_root: Path,
+    image_column: str,
+    label_column: str,
+) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for label_dir in sorted(path for path in split_root.iterdir() if path.is_dir()):
+        if label_dir.name.startswith("."):
+            continue
+        label = canonicalize_label(label_dir.name)
+        for image_path in sorted(label_dir.rglob("*")):
+            if image_path.is_file() and image_path.suffix.lower() in IMAGE_SUFFIXES:
+                rows.append(
+                    {
+                        image_column: str(image_path.resolve()),
+                        label_column: label,
+                    }
+                )
+    return rows
+
+
+def infer_label2id(
+    dataset: dict[str, list[dict[str, str]]],
+    label_column: str,
+) -> dict[str, int]:
+    label_counts: Counter[str] = Counter()
+    for rows in dataset.values():
+        label_counts.update(str(row[label_column]) for row in rows)
+    return {label: index for index, label in enumerate(ordered_labels(label_counts))}
 
 
 def analyze_split(

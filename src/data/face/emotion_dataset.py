@@ -189,7 +189,7 @@ def parse_label_map(value: str | None) -> dict[str, str] | None:
 
 
 def _detect_dataset_type(path: Path) -> str:
-    if (path / "train_labels.csv").exists() and (path / "test_labels.csv").exists():
+    if "rafdb" in path.name.lower():
         return "rafdb"
     if "affectnet" in path.name.lower():
         return "affectnet"
