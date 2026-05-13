@@ -241,17 +241,113 @@ plots.png
 class_metrics.png
 ```
 
+## Quantize Gemma 4 E4B-it
+Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Download `google/gemma-4-E4B-it` from Hugging Face and save a 4-bit NF4
+quantized copy to disk:
+
+```bash
+python3 scripts/quantize_gemma4.py \
+  --model-id google/gemma-4-E4B-it \
+  --output-dir models/pretrained/vlm/gemma-4-E4B-it-4bit \
+  --device-map auto
+```
+
+To load the saved model in code:
+
+```python
+from src.models.vlm.gemma4 import load_quantized
+
+model, processor = load_quantized("models/pretrained/vlm/gemma-4-E4B-it-4bit")
+```
+
+## Download Gemma 4 E2B-it (bfloat16, no quantization)
+Install the dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Download `google/gemma-4-E2B-it` from Hugging Face and save the original
+bfloat16 model to disk:
+
+```bash
+python3 scripts/download_gemma4.py \
+  --model-id google/gemma-4-E2B-it \
+  --output-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
+  --device-map auto
+```
+
+To load the saved model in code:
+
+```python
+from src.models.vlm.gemma4 import load_bf16
+
+model, processor = load_bf16("models/pretrained/vlm/gemma-4-E2B-it-16bit")
+```
+
 ## Experiments
-### 1. Direct VLM
+
+### Exp 1 — Direct VLM
+A baseline experiment that feeds face images directly into the VLM to infer
+emotion, with no vision model involved.
+
 ```
-face video → Gemma 4 → emotion
+face image → VLM → emotion
 ```
-### 2. Vision Model (LoRA)
+```bash
+python3 scripts/run_exp01_vlm_direct.py \
+  --test-dir data/raw/face/balanced_rafdb/test \
+  --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
+  --max-new-tokens 512
 ```
-face video → Vision Model (LoRA) → emotion
+
+### Exp 2 — Vision Model
+Runs a vision model alone to classify facial emotion.
+Measures the standalone accuracy of the vision model as a reference.
+
 ```
-### 3. Vision-Assisted VLM
+face image → Vision Model → emotion
 ```
-face video → Vision Model (LoRA) → prediction
-face video + prediction → Gemma 4 → emotion
+```bash
+python3 scripts/run_exp02_vision.py \
+  --test-dir data/raw/face/balanced_rafdb/test \
+  --model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --backbone-pretrained-dir models/pretrained/face/dinov2 \
+  --lora-r 8 --lora-alpha 16
+```
+
+### Exp 3 — Vision-Assisted VLM
+The vision model's prediction is passed as additional context to the VLM.
+Tests whether the vision model's prior judgment improves the VLM's final
+emotion prediction.
+
+```
+face image → Vision Model → prediction
+face image + prediction → VLM → emotion
+```
+```bash
+python3 scripts/run_exp03_vision_assisted_vlm.py \
+  --test-dir data/raw/face/balanced_rafdb/test \
+  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
+  --backbone-pretrained-dir models/pretrained/face/dinov2 \
+  --max-new-tokens 512 \
+  --lora-r 8 --lora-alpha 16
+```
+
+### Visualize Results
+Launches a Gradio UI to browse experiment results sample by sample.
+Displays the input image, predicted emotion, VLM response, and a
+patch-level PCA visualization of the vision model's feature space.
+
+```bash
+python3 scripts/visualize_exp_results.py \
+  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit
 ```

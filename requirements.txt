@@ -1,8 +1,13 @@
+accelerate>=0.30.0
+bitsandbytes>=0.43.0
 datasets>=2.20.0
+gradio>=4.0.0
 huggingface_hub>=0.24.0
 kagglehub>=1.0.0
+matplotlib>=3.7.0
 peft>=0.11.0
 pillow>=10.0.0
+scikit-learn>=1.3.0
 torch>=2.2.0
 tqdm>=4.66.0
-transformers>=4.43.0
+transformers>=4.50.0
