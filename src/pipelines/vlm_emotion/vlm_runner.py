@@ -61,14 +61,6 @@ class Gemma4Runner:
         max_new_tokens: int = 256,
     ) -> None:
         self.model, self.processor = load_quantized(model_dir, device_map=device_map)
-
-        print(type(self.model))
-        print(self.model.hf_device_map if hasattr(self.model, "hf_device_map") else None)
-
-        for name, module in self.model.named_modules():
-            if "audio" in name.lower() or "embed_audio" in name.lower():
-                print(name, type(module))
-
         self.max_new_tokens = max_new_tokens
         self.model.eval()
 
