@@ -97,10 +97,18 @@ def _navigate(idx: int, delta: int = 0, rand: bool = False) -> list[Any]:
 
 # ─────────────────────────── Gradio UI ───────────────────────────────
 
+_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500&display=swap');
+* {
+    font-family: 'Noto Sans KR', sans-serif !important;
+}
+"""
+
+
 def build_demo(vlm_name: str, vision_name: str) -> Any:
     import gradio as gr
 
-    with gr.Blocks(title="VLM Emotion Experiments") as demo:
+    with gr.Blocks(title="VLM Emotion Experiments", css=_CSS) as demo:
         gr.Markdown("# VLM Emotion Experiment Results")
         gr.Markdown(METRICS_MD)
 
