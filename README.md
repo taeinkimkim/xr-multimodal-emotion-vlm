@@ -169,7 +169,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_affectnet \
-  --model-filename model_ep5_bs16.pt
+  --model-filename model_cls_ep5_bs16.pt
 ```
 
 To train on RAF-DB:
@@ -185,7 +185,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_rafdb \
-  --model-filename model_ep5_bs16.pt
+  --model-filename model_cls_ep5_bs16.pt
 ```
 
 The model uses Hugging Face `AutoImageProcessor` and `AutoModel` to load
@@ -222,7 +222,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --batch-size 16 \
   --lr 0.0001 \
   --output-dir models/trained/face/dinov2_affectnet \
-  --model-filename model_lora_ep5_bs16.pt
+  --model-filename model_cls_lora_ep5_bs16.pt
 ```
 
 Use `--unfreeze-backbone` only when you want full backbone fine-tuning. For a
@@ -321,7 +321,7 @@ face image → Vision Model → emotion
 ```bash
 python3 scripts/run_exp02_vision.py \
   --test-dir data/raw/face/balanced_rafdb/test \
-  --model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --model-dir models/trained/face/dinov2_balanced_rafdb/model_cls_lora_ep10_bs16 \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
   --pool-mode cls \
   --lora-r 8 --lora-alpha 16
@@ -339,7 +339,7 @@ face image + prediction → VLM → emotion
 ```bash
 python3 scripts/run_exp03_vision_assisted_vlm.py \
   --test-dir data/raw/face/balanced_rafdb/test \
-  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_cls_lora_ep10_bs16 \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
   --prompt-id 2 \
@@ -355,7 +355,7 @@ patch-level PCA visualization of the vision model's feature space.
 
 ```bash
 python3 scripts/visualize_exp_results.py \
-  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
+  --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_cls_lora_ep10_bs16 \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --prompt-id 2
 ```
