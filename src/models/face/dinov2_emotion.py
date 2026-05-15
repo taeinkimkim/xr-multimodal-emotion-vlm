@@ -22,6 +22,7 @@ class Dinov2EmotionClassifier(nn.Module):
         lora_alpha: int = 16,
         lora_dropout: float = 0.05,
         pretrained_dir: Path | None = None,
+        pool_mode: str = "cls",
     ) -> None:
         super().__init__()
         model_source = _resolve_pretrained_source(model_name, pretrained_dir)
@@ -48,6 +49,7 @@ class Dinov2EmotionClassifier(nn.Module):
                 dropout=lora_dropout,
             )
 
+        self.pool_mode = pool_mode
         self.classifier = nn.Sequential(
             nn.LayerNorm(hidden_size),
             nn.Dropout(0.1),
@@ -56,7 +58,7 @@ class Dinov2EmotionClassifier(nn.Module):
 
     def forward(self, pixel_values: torch.Tensor) -> torch.Tensor:
         outputs = self.backbone(pixel_values=pixel_values)
-        pooled = _pool_dinov2_output(outputs)
+        pooled = _pool_dinov2_output(outputs, self.pool_mode)
         return self.classifier(pooled)
 
 
@@ -80,9 +82,11 @@ def _resolve_pretrained_source(model_name: str, pretrained_dir: Path | None) -> 
     return str(pretrained_dir) if has_config and has_weights else model_name
 
 
-def _pool_dinov2_output(outputs: object) -> torch.Tensor:
-    pooler_output = getattr(outputs, "pooler_output", None)
-    if pooler_output is not None:
+def _pool_dinov2_output(outputs: object, pool_mode: str = "cls") -> torch.Tensor:
+    if pool_mode == "pooler":
+        pooler_output = getattr(outputs, "pooler_output", None)
+        if pooler_output is None:
+            raise ValueError("DINOv2 output does not include pooler_output")
         return pooler_output
 
     last_hidden_state = getattr(outputs, "last_hidden_state", None)

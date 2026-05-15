@@ -165,6 +165,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
+  --pool-mode pooler \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_affectnet \
@@ -180,6 +181,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
+  --pool-mode pooler \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_rafdb \
@@ -212,6 +214,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
+  --pool-mode pooler \
   --use-lora \
   --lora-r 8 \
   --lora-alpha 16 \
@@ -319,6 +322,7 @@ python3 scripts/run_exp02_vision.py \
   --test-dir data/raw/face/balanced_rafdb/test \
   --model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
+  --pool-mode pooler \
   --lora-r 8 --lora-alpha 16
 ```
 
@@ -338,6 +342,7 @@ python3 scripts/run_exp03_vision_assisted_vlm.py \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
   --max-new-tokens 512 \
+  --pool-mode pooler \
   --lora-r 8 --lora-alpha 16
 ```
 

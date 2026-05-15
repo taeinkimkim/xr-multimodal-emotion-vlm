@@ -45,6 +45,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--lora-r", type=int, default=8)
     parser.add_argument("--lora-alpha", type=int, default=16)
+    parser.add_argument("--pool-mode", choices=["cls", "pooler"], default="cls",
+                        help="How to pool DINOv2 output: 'cls' (CLS token) or 'pooler' (pooler_output)")
     return parser.parse_args()
 
 
@@ -70,6 +72,7 @@ def main() -> None:
         lora_r=args.lora_r,
         lora_alpha=args.lora_alpha,
         device=args.device,
+        pool_mode=args.pool_mode,
     )
 
     results: list[dict] = []

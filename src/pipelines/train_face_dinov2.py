@@ -35,6 +35,8 @@ def add_dinov2_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--lora-r", type=int, default=8)
     parser.add_argument("--lora-alpha", type=int, default=16)
     parser.add_argument("--lora-dropout", type=float, default=0.05)
+    parser.add_argument("--pool-mode", choices=["cls", "pooler"], default="cls",
+                        help="How to pool DINOv2 output: 'cls' (CLS token) or 'pooler' (pooler_output)")
 
 
 def build_dinov2_model(args: argparse.Namespace, num_labels: int) -> nn.Module:
@@ -47,6 +49,7 @@ def build_dinov2_model(args: argparse.Namespace, num_labels: int) -> nn.Module:
         lora_alpha=args.lora_alpha,
         lora_dropout=args.lora_dropout,
         pretrained_dir=args.pretrained_dir,
+        pool_mode=args.pool_mode,
     )
 
 

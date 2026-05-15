@@ -22,6 +22,7 @@ class Dinov2EmotionRunner:
         lora_r: int = 8,
         lora_alpha: int = 16,
         device: str = "cuda",
+        pool_mode: str = "cls",
     ) -> None:
         model_dir = Path(model_dir)
 
@@ -42,6 +43,7 @@ class Dinov2EmotionRunner:
         )
         self.processor = AutoImageProcessor.from_pretrained(processor_source)
 
+        self.pool_mode = pool_mode
         self.model = Dinov2EmotionClassifier(
             model_name=backbone_name,
             num_labels=num_labels,
@@ -51,6 +53,7 @@ class Dinov2EmotionRunner:
             lora_alpha=lora_alpha,
             lora_dropout=0.05,
             pretrained_dir=pretrained_dir,
+            pool_mode=pool_mode,
         )
         state_dict = torch.load(model_dir / "best.pt", map_location="cpu", weights_only=True)
         self.model.load_state_dict(state_dict)
@@ -71,7 +74,7 @@ class Dinov2EmotionRunner:
         pixel_values = pixel_values.to(self.device)
 
         backbone_out = self.model.backbone(pixel_values=pixel_values)
-        cls_token = _pool_dinov2_output(backbone_out)          # (1, hidden)
+        cls_token = _pool_dinov2_output(backbone_out, self.pool_mode)  # (1, hidden)
         logits = self.model.classifier(cls_token)              # (1, num_labels)
 
         probs = torch.softmax(logits, dim=-1)[0]
