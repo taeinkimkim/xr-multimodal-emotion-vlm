@@ -36,6 +36,8 @@ def parse_args() -> argparse.Namespace:
         default=Path("experiments/face/exp01_vlm_direct"),
     )
     parser.add_argument("--device-map", default="auto")
+    parser.add_argument("--prompt-id", type=int, choices=[1, 2], default=2,
+                        help="Prompt template to use (1=simple, 2=step-by-step; default: 2)")
     parser.add_argument("--max-new-tokens", type=int, default=512)
     return parser.parse_args()
 
@@ -68,6 +70,7 @@ def main() -> None:
             model_dir=args.vlm_model_dir,
             device_map=args.device_map,
             max_new_tokens=args.max_new_tokens,
+            prompt_id=args.prompt_id,
         )
 
         results = list(done)

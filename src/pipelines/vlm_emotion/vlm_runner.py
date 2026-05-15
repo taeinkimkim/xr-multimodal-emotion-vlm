@@ -10,6 +10,7 @@ import torch
 from PIL import Image
 
 from src.models.vlm.gemma4 import load_quantized
+from src.pipelines.vlm_emotion.prompt import DIRECT_PROMPTS, ASSISTED_PROMPTS
 
 EMOTION_LABELS = ("Happiness", "Sadness", "Anger", "Surprise", "Fear", "Disgust", "Neutral")
 
@@ -17,30 +18,6 @@ _LABEL_RE = re.compile(
     r"Emotion\s*:\s*(" + "|".join(EMOTION_LABELS) + r")\b",
     re.IGNORECASE,
 )
-
-_DIRECT_PROMPT = """\
-Look at this facial image and identify the person's emotion.
-
-Choose exactly one emotion from: Happiness, Sadness, Anger, Surprise, Fear, Disgust, Neutral.
-
-Reply in this exact format:
-Emotion: <label>
-Reasoning: <2–3 sentences describing the facial features you observed>\
-"""
-
-_ASSISTED_PROMPT_TMPL = """\
-A vision model has analyzed this facial image and provided the following context:
-- Predicted emotion: {vision_label}
-- Feature summary: {feature_summary}
-
-Using this context alongside your own analysis, identify the most likely emotion.
-
-Choose exactly one emotion from: Happiness, Sadness, Anger, Surprise, Fear, Disgust, Neutral.
-
-Reply in this exact format:
-Emotion: <label>
-Reasoning: <2–3 sentences describing your analysis>\
-"""
 
 
 def _format_features(cls_token: np.ndarray, top_k: int = 10) -> str:
@@ -59,14 +36,18 @@ class Gemma4Runner:
         model_dir: Path | str,
         device_map: str = "auto",
         max_new_tokens: int = 256,
+        prompt_id: int = 2,
     ) -> None:
+        if prompt_id not in DIRECT_PROMPTS:
+            raise ValueError(f"Invalid prompt_id {prompt_id}. Choose from {sorted(DIRECT_PROMPTS)}")
         self.model, self.processor = load_quantized(model_dir, device_map=device_map)
         self.max_new_tokens = max_new_tokens
+        self.prompt_id = prompt_id
         self.model.eval()
 
     def run_direct(self, image_path: Path | str) -> dict:
         """Exp 1: image → Gemma 4 → {response, predicted_label}."""
-        return self._generate(image_path, _DIRECT_PROMPT)
+        return self._generate(image_path, DIRECT_PROMPTS[self.prompt_id])
 
     def run_vision_assisted(
         self,
@@ -75,7 +56,7 @@ class Gemma4Runner:
         cls_token: np.ndarray,
     ) -> dict:
         """Exp 3: image + vision_label + cls_token → Gemma 4 → {response, predicted_label}."""
-        prompt = _ASSISTED_PROMPT_TMPL.format(
+        prompt = ASSISTED_PROMPTS[self.prompt_id].format(
             vision_label=vision_label,
             feature_summary=_format_features(cls_token),
         )
@@ -88,7 +69,13 @@ class Gemma4Runner:
         messages = [
             {
                 "role": "system",
-                "content": "You are an emotion recognition assistant.",
+                "content": (
+                    "You are an expert in facial emotion recognition. "
+                    "Always respond strictly in the format requested and choose only "
+                    "from the exact emotion labels provided. "
+                    "For every prediction, provide a detailed explanation of the specific evidence "
+                    "and reasoning that led you to that conclusion."
+                ),
             },
             {
                 "role": "user",

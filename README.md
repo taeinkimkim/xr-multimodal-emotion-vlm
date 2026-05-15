@@ -307,6 +307,7 @@ face image → VLM → emotion
 python3 scripts/run_exp01_vlm_direct.py \
   --test-dir data/raw/face/balanced_rafdb/test \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
+  --prompt-id 2 \
   --max-new-tokens 512
 ```
 
@@ -341,6 +342,7 @@ python3 scripts/run_exp03_vision_assisted_vlm.py \
   --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
+  --prompt-id 2 \
   --max-new-tokens 512 \
   --pool-mode pooler \
   --lora-r 8 --lora-alpha 16
