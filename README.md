@@ -165,7 +165,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
-  --pool-mode pooler \
+  --pool-mode cls \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_affectnet \
@@ -181,7 +181,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
-  --pool-mode pooler \
+  --pool-mode cls \
   --epochs 5 \
   --batch-size 16 \
   --output-dir models/trained/face/dinov2_rafdb \
@@ -214,7 +214,7 @@ python3 -m src.pipelines.train_face_dinov2 \
   --validation-ratio 0.1 \
   --model-name facebook/dinov2-base \
   --pretrained-dir models/pretrained/face/dinov2 \
-  --pool-mode pooler \
+  --pool-mode cls \
   --use-lora \
   --lora-r 8 \
   --lora-alpha 16 \
@@ -323,7 +323,7 @@ python3 scripts/run_exp02_vision.py \
   --test-dir data/raw/face/balanced_rafdb/test \
   --model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
-  --pool-mode pooler \
+  --pool-mode cls \
   --lora-r 8 --lora-alpha 16
 ```
 
@@ -344,7 +344,7 @@ python3 scripts/run_exp03_vision_assisted_vlm.py \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
   --prompt-id 2 \
   --max-new-tokens 512 \
-  --pool-mode pooler \
+  --pool-mode cls \
   --lora-r 8 --lora-alpha 16
 ```
 
@@ -356,5 +356,6 @@ patch-level PCA visualization of the vision model's feature space.
 ```bash
 python3 scripts/visualize_exp_results.py \
   --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_lora_ep10_bs16 \
-  --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit
+  --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
+  --prompt-id 2
 ```

@@ -51,7 +51,7 @@ def _load_partial(results_path: Path) -> list[dict]:
 
 def main() -> None:
     args = parse_args()
-    args.output_dir = args.output_dir / args.vlm_model_dir.name
+    args.output_dir = args.output_dir / args.vlm_model_dir.name / f"prompt_id_{args.prompt_id}"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     results_path = args.output_dir / "results.json"
 

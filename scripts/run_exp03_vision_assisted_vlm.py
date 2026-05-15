@@ -86,6 +86,7 @@ def main() -> None:
         args.output_dir
         / f"{args.vision_model_dir.parent.name}+{args.vlm_model_dir.name}"
         / args.vision_model_dir.name
+        / f"prompt_id_{args.prompt_id}"
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
