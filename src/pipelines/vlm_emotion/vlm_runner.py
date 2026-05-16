@@ -37,12 +37,14 @@ class Gemma4Runner:
         device_map: str = "auto",
         max_new_tokens: int = 256,
         prompt_id: int = 2,
+        enable_thinking: bool = False,
     ) -> None:
         if prompt_id not in DIRECT_PROMPTS:
             raise ValueError(f"Invalid prompt_id {prompt_id}. Choose from {sorted(DIRECT_PROMPTS)}")
         self.model, self.processor = load_quantized(model_dir, device_map=device_map)
         self.max_new_tokens = max_new_tokens
         self.prompt_id = prompt_id
+        self.enable_thinking = enable_thinking
         self.model.eval()
 
     def run_direct(self, image_path: Path | str) -> dict:
@@ -70,11 +72,7 @@ class Gemma4Runner:
             {
                 "role": "system",
                 "content": (
-                    "You are an expert in facial emotion recognition. "
-                    "Always respond strictly in the format requested and choose only "
-                    "from the exact emotion labels provided. "
-                    "For every prediction, provide a detailed explanation of the specific evidence "
-                    "and reasoning that led you to that conclusion."
+                    "You are an emotion recognition assistant."
                 ),
             },
             {
@@ -92,6 +90,7 @@ class Gemma4Runner:
             return_dict=True,
             return_tensors="pt",
             add_generation_prompt=True,
+            enable_thinking=self.enable_thinking,
         ).to(self.model.device)
 
         input_len = inputs["input_ids"].shape[-1]

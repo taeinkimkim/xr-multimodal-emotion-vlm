@@ -38,6 +38,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device-map", default="auto")
     parser.add_argument("--prompt-id", type=int, choices=[1, 2], default=2,
                         help="Prompt template to use (1=simple, 2=step-by-step; default: 2)")
+    parser.add_argument("--enable-thinking", action="store_true",
+                        help="Enable thinking mode in apply_chat_template")
     parser.add_argument("--max-new-tokens", type=int, default=512)
     return parser.parse_args()
 
@@ -52,6 +54,8 @@ def _load_partial(results_path: Path) -> list[dict]:
 def main() -> None:
     args = parse_args()
     args.output_dir = args.output_dir / args.vlm_model_dir.name / f"prompt_id_{args.prompt_id}"
+    if args.enable_thinking:
+        args.output_dir = args.output_dir / "enable_thinking"
     args.output_dir.mkdir(parents=True, exist_ok=True)
     results_path = args.output_dir / "results.json"
 
@@ -71,6 +75,7 @@ def main() -> None:
             device_map=args.device_map,
             max_new_tokens=args.max_new_tokens,
             prompt_id=args.prompt_id,
+            enable_thinking=args.enable_thinking,
         )
 
         results = list(done)

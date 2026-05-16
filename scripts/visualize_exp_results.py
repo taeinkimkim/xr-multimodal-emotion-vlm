@@ -179,6 +179,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--prompt-id", type=int, choices=[1, 2], default=2,
                         help="Prompt ID used when running the experiments (default: 2)")
+    parser.add_argument("--enable-thinking", action="store_true",
+                        help="Load results from enable_thinking subdirectory")
     parser.add_argument("--port",  type=int, default=7860)
     parser.add_argument("--share", action="store_true",
                         help="Create a public Gradio share link")
@@ -199,15 +201,17 @@ def main() -> None:
 
     # Reconstruct experiment output paths (mirrors each runner script)
     prompt_dir = f"prompt_id_{args.prompt_id}"
+    thinking_dir = "enable_thinking" if args.enable_thinking else ""
     exp_dirs = {
-        1: Path("experiments/face/exp01_vlm_direct") / vlm_model_dir.name / prompt_dir,
+        1: Path("experiments/face/exp01_vlm_direct") / vlm_model_dir.name / prompt_dir / thinking_dir,
         2: (Path("experiments/face/exp02_vision")
             / vision_model_dir.parent.name
             / vision_model_dir.name),
         3: (Path("experiments/face/exp03_vision_assisted_vlm")
             / f"{vision_model_dir.parent.name}+{vlm_model_dir.name}"
             / vision_model_dir.name
-            / prompt_dir),
+            / prompt_dir
+            / thinking_dir),
     }
 
     # Load results

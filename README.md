@@ -308,6 +308,7 @@ python3 scripts/run_exp01_vlm_direct.py \
   --test-dir data/raw/face/balanced_rafdb/test \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --prompt-id 2 \
+  --enable-thinking \
   --max-new-tokens 512
 ```
 
@@ -343,6 +344,7 @@ python3 scripts/run_exp03_vision_assisted_vlm.py \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
   --backbone-pretrained-dir models/pretrained/face/dinov2 \
   --prompt-id 2 \
+  --enable-thinking \
   --max-new-tokens 512 \
   --pool-mode cls \
   --lora-r 8 --lora-alpha 16
@@ -357,5 +359,6 @@ patch-level PCA visualization of the vision model's feature space.
 python3 scripts/visualize_exp_results.py \
   --vision-model-dir models/trained/face/dinov2_balanced_rafdb/model_cls_lora_ep10_bs16 \
   --vlm-model-dir models/pretrained/vlm/gemma-4-E2B-it-16bit \
-  --prompt-id 2
+  --prompt-id 2 \
+  --enable-thinking
 ```
