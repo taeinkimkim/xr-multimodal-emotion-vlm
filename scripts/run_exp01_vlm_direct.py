@@ -36,8 +36,8 @@ def parse_args() -> argparse.Namespace:
         default=Path("experiments/face/exp01_vlm_direct"),
     )
     parser.add_argument("--device-map", default="auto")
-    parser.add_argument("--prompt-id", type=int, choices=[1, 2], default=2,
-                        help="Prompt template to use (1=simple, 2=step-by-step; default: 2)")
+    parser.add_argument("--prompt-id", type=int, choices=[0, 1, 2], default=2,
+                        help="Prompt template to use (0=no-reasoning, 1=simple, 2=step-by-step; default: 2)")
     parser.add_argument("--enable-thinking", action="store_true",
                         help="Enable thinking mode in apply_chat_template")
     parser.add_argument("--max-new-tokens", type=int, default=512)

@@ -3,6 +3,14 @@
 from __future__ import annotations
 
 DIRECT_PROMPTS: dict[int, str] = {
+    0: """\
+Look at this facial image and identify the person's emotion.
+
+Choose exactly one emotion from: Happiness, Sadness, Anger, Surprise, Fear, Disgust, Neutral.
+
+Reply in this exact format:
+Emotion: <label>""",
+
     1: """\
 Look at this facial image and identify the person's emotion.
 
@@ -29,6 +37,18 @@ Reasoning: <how those features led to your choice, and why you ruled out alterna
 }
 
 ASSISTED_PROMPTS: dict[int, str] = {
+    0: """\
+A vision model has analyzed this facial image and provided the following context:
+- Predicted emotion: {vision_label}
+- Feature summary: {feature_summary}
+
+Using this context alongside your own analysis, identify the most likely emotion.
+
+Choose exactly one emotion from: Happiness, Sadness, Anger, Surprise, Fear, Disgust, Neutral.
+
+Reply in this exact format:
+Emotion: <label>""",
+
     1: """\
 A vision model has analyzed this facial image and provided the following context:
 - Predicted emotion: {vision_label}
